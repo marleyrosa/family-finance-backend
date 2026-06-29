@@ -1,22 +1,17 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
-# ✅ BASE
 class UserBase(BaseModel):
     nome: str
     email: EmailStr
 
 
-# ✅ CRIAÇÃO
 class UserCreate(UserBase):
     password: str
 
 
-# ✅ RESPOSTA
 class UserResponse(UserBase):
     id: int
 
-    cmodel_config = {
-    "from_attributes": True
-}
+    model_config = ConfigDict(from_attributes=True)
 
