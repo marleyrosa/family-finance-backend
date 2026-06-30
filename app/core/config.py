@@ -7,7 +7,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/family_finance"
     jwt_secret_key: str = Field(
-        default="change_me",
         validation_alias=AliasChoices("JWT_SECRET_KEY", "SECRET_KEY"),
     )
     jwt_algorithm: str = "HS256"
