@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token, get_current_user, hash_password, verify_password
@@ -29,18 +30,49 @@ def _is_valid_login_password(plain_password: str, password_hash: str | None) -> 
         return False
 
 
+def _validate_register_fields(nome: str | None, email: str, password: str) -> str:
+    clean_nome = (nome or "").strip()
+    if not clean_nome:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome e obrigatorio")
+
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email e obrigatorio")
+
+    if not password or len(password) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Senha invalida")
+
+    return clean_nome
+
+
 @public_router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    nome = _validate_register_fields(payload.nome, str(payload.email), payload.password)
+
     existing = db.scalar(select(User).where(User.email == payload.email))
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email ja cadastrado")
 
-    nome = payload.nome or payload.email.split("@")[0]
-    user = User(nome=nome, email=payload.email, password_hash=hash_password(payload.password))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        password_hash = hash_password(payload.password)
+        user = User(
+            nome=nome,
+            email=payload.email,
+            password_hash=password_hash,
+            senha=password_hash,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email ja cadastrado")
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Erro ao salvar usuario")
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Erro ao processar cadastro")
 
 
 @public_router.post("/login", response_model=Token)
@@ -55,21 +87,33 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserCreate, db: Session = Depends(get_db)):
+    nome = _validate_register_fields(payload.nome, str(payload.email), payload.password)
+
     existing = db.scalar(select(User).where(User.email == payload.email))
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email ja cadastrado")
 
-    password_hash = hash_password(payload.password)
-    user = User(
-        nome=payload.nome,
-        email=payload.email,
-        password_hash=password_hash,
-        senha=password_hash,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        password_hash = hash_password(payload.password)
+        user = User(
+            nome=nome,
+            email=payload.email,
+            password_hash=password_hash,
+            senha=password_hash,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email ja cadastrado")
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Erro ao salvar usuario")
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Erro ao processar cadastro")
 
 
 @router.post("/login", response_model=Token)
