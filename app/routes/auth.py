@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, get_current_user, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, Token, UserCreate, UserOut
+from app.schemas.auth import LoginRequest, Token, UserCreate, UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -30,8 +30,8 @@ def _is_valid_login_password(plain_password: str, password_hash: str | None) -> 
         return False
 
 
-def _validate_register_fields(nome: str | None, email: str, password: str) -> str:
-    clean_nome = (nome or "").strip()
+def _validate_register_fields(nome: str, email: str, password: str) -> str:
+    clean_nome = nome.strip()
     if not clean_nome:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome e obrigatorio")
 
@@ -45,7 +45,7 @@ def _validate_register_fields(nome: str | None, email: str, password: str) -> st
 
 
 @public_router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+def register(payload: UserCreate, db: Session = Depends(get_db)):
     nome = _validate_register_fields(payload.nome, str(payload.email), payload.password)
 
     existing = db.scalar(select(User).where(User.email == payload.email))
