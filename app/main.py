@@ -24,6 +24,11 @@ from app.models import finance  # noqa: F401
 # ✅ CONFIGURAÇÕES
 settings = get_settings()
 
+configured_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+render_frontend_origin = "https://family-finance-frontend-7cc4.onrender.com"
+if render_frontend_origin not in configured_origins:
+    configured_origins.append(render_frontend_origin)
+
 # ✅ APP
 app = FastAPI(
     title="Family Finance API",
@@ -33,7 +38,7 @@ app = FastAPI(
 # ✅ ✅ CORS LIBERADO
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ✅ permite frontend funcionar
+    allow_origins=configured_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
