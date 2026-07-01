@@ -1,19 +1,13 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
-from app.db.session import get_db
-from app.models.user import User
-from app.schemas.division import DivisionResult
-from app.services.division_service import calculate_division
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-
 from app.db.session import get_db
 from app.models.expense import Expense
 from app.models.user import User
-from app.core.security import get_current_user
+from app.schemas.division import DivisionResult
+from app.services.division_service import calculate_division
 
 router = APIRouter(prefix="/divisao", tags=["divisao"])
 
@@ -36,10 +30,9 @@ def resumo_divisao(
         "total_geral": total_geral,
         "por_usuario": resultado
     }
-router = APIRouter(tags=["divisao"])
 
 
-@router.get("/divisao/{mes}/{ano}", response_model=DivisionResult)
+@router.get("/{mes}/{ano}", response_model=DivisionResult)
 def get_division(
     mes: int,
     ano: int,

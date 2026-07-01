@@ -6,6 +6,7 @@ from app.db.base import Base
 from app.db.session import engine
 
 from app.routes.auth import router as auth_router
+from app.routes.auth import public_router as auth_public_router
 from app.routes.couple import router as couple_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.division import router as division_router
@@ -54,6 +55,7 @@ def health_check():
 
 
 # ✅ ✅ ROTAS
+app.include_router(auth_public_router)
 app.include_router(auth_router)
 app.include_router(login_router)
 app.include_router(couple_router)
