@@ -14,6 +14,21 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 public_router = APIRouter(tags=["auth"])
 
 
+def _resolve_password_hash(user: User | None) -> str | None:
+    if not user:
+        return None
+    return user.password_hash or user.senha
+
+
+def _is_valid_login_password(plain_password: str, password_hash: str | None) -> bool:
+    if not password_hash:
+        return False
+    try:
+        return verify_password(plain_password, password_hash)
+    except Exception:
+        return False
+
+
 @public_router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.scalar(select(User).where(User.email == payload.email))
@@ -31,7 +46,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 @public_router.post("/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == payload.email))
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not _is_valid_login_password(payload.password, _resolve_password_hash(user)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais invalidas")
 
     token = create_access_token(user.email)
@@ -59,8 +74,11 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    if not form_data.username or not form_data.password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais invalidas")
+
     user = db.scalar(select(User).where(User.email == form_data.username))
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if not _is_valid_login_password(form_data.password, _resolve_password_hash(user)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais invalidas")
 
     token = create_access_token(user.email)
