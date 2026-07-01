@@ -17,7 +17,13 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email ja cadastrado")
 
-    user = User(nome=payload.nome, email=payload.email, password_hash=hash_password(payload.password))
+    password_hash = hash_password(payload.password)
+    user = User(
+        nome=payload.nome,
+        email=payload.email,
+        password_hash=password_hash,
+        senha=password_hash,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)

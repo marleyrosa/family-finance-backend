@@ -10,12 +10,15 @@ from app.routes.couple import router as couple_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.division import router as division_router
 from app.routes.expense import router as expense_router
+from app.routes.finance import router as finance_router
 from app.routes.income import router as income_router
+from app.routes.login import router as login_router
 from app.routes.report import router as report_router
 from app.routes.meta import router as meta_router
 
 # 👉 Importa models (IMPORTANTE)
 from app.models import expense, income, relation, user  # noqa: F401
+from app.models import finance  # noqa: F401
 
 # ✅ CONFIGURAÇÕES
 settings = get_settings()
@@ -52,6 +55,7 @@ def health_check():
 
 # ✅ ✅ ROTAS
 app.include_router(auth_router)
+app.include_router(login_router)
 app.include_router(couple_router)
 app.include_router(income_router)
 app.include_router(expense_router)
@@ -59,3 +63,4 @@ app.include_router(division_router)
 app.include_router(dashboard_router)
 app.include_router(report_router)
 app.include_router(meta_router)
+app.include_router(finance_router)
